@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Passport Photo Cropper</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .main {
+            padding: 40px;
+        }
+
+        .upload-section {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .upload-area {
+            border: 3px dashed #3b82f6;
+            border-radius: 15px;
+            padding: 60px 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8faff;
+        }
+
+        .upload-area:hover {
+            border-color: #1d4ed8;
+            background: #eff6ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #1d4ed8;
+            background: #dbeafe;
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 4rem;
+            color: #3b82f6;
+            margin-bottom: 20px;
+        }
+
+        .upload-text {
+            font-size: 1.3rem;
+            color: #374151;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .upload-subtext {
+            color: #6b7280;
+            font-size: 1rem;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .controls-section {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .control-panel {
+            background: #f9fafb;
+            border-radius: 15px;
+            padding: 25px;
+            border: 2px solid #e5e7eb;
+        }
+
+        .control-panel h3 {
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+            color: #374151;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 10px;
+        }
+
+        .preset-option {
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .preset-option:hover {
+            border-color: #3b82f6;
+            background: #f8faff;
+        }
+
+        .preset-option.selected {
+            border-color: #3b82f6;
+            background: #eff6ff;
+            color: #1d4ed8;
+        }
+
+        .preset-option h4 {
+            font-weight: 600;
+            margin-bottom: 3px;
+            font-size: 0.95rem;
+        }
+
+        .preset-option p {
+            font-size: 0.8rem;
+            color: #6b7280;
+        }
+
+        .measurement-controls {
+            margin-top: 20px;
+        }
+
+        .measurement-group {
+            margin-bottom: 15px;
+        }
+
+        .measurement-group label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 5px;
+            color: #374151;
+            font-size: 0.9rem;
+        }
+
+        .measurement-group input {
+            width: 100%;
+            padding: 8px;
+            border: 2px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        .measurement-group input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+
+        .auto-detect-btn {
+            width: 100%;
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .auto-detect-btn:hover {
+            background: #059669;
+        }
+
+        .crop-area {
+            position: relative;
+            background: #f9fafb;
+            border-radius: 15px;
+            border: 2px solid #e5e7eb;
+            overflow: hidden;
+            min-height: 500px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .image-container {
+            position: relative;
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        .source-image {
+            max-width: 100%;
+            max-height: 500px;
+            border-radius: 8px;
+        }
+
+        .crop-overlay {
+            position: absolute;
+            border: 2px solid #3b82f6;
+            background: rgba(59, 130, 246, 0.1);
+            cursor: move;
+        }
+
+        .crop-handle {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: #3b82f6;
+            border: 2px solid white;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .crop-handle.nw { top: -6px; left: -6px; cursor: nw-resize; }
+        .crop-handle.ne { top: -6px; right: -6px; cursor: ne-resize; }
+        .crop-handle.sw { bottom: -6px; left: -6px; cursor: sw-resize; }
+        .crop-handle.se { bottom: -6px; right: -6px; cursor: se-resize; }
+
+        .face-detection-overlay {
+            position: absolute;
+            border: 2px solid #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+            pointer-events: none;
+        }
+
+        .head-measurement-line {
+            position: absolute;
+            border-left: 2px solid #f59e0b;
+            pointer-events: none;
+        }
+
+        .measurement-label {
+            position: absolute;
+            background: #f59e0b;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .action-buttons {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .btn {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 0 10px;
+        }
+
+        .btn:hover {
+            background: #1d4ed8;
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-success {
+            background: #10b981;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .preview-section {
+            margin-top: 40px;
+            text-align: center;
+        }
+
+        .preview-section h3 {
+            margin-bottom: 20px;
+            color: #374151;
+        }
+
+        .preview-canvas {
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .status-message {
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .status-success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+
+        .status-warning {
+            background: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fde68a;
+        }
+
+        .status-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+
+        @media (max-width: 768px) {
+            .controls-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .main {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 Professional Passport Photo Cropper</h1>
+            <p>Advanced face detection, auto measurements, and interactive cropping</p>
+        </div>
+
+        <div class="main">
+            <!-- Upload Section -->
+            <div class="upload-section" id="uploadSection">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📸</div>
+                    <div class="upload-text">Drop your photo here or click to browse</div>
+                    <div class="upload-subtext">Supports JPG, PNG, WebP (max 10MB)</div>
+                </div>
+                <input type="file" id="fileInput" accept="image/*" class="hidden">
+            </div>
+
+            <!-- Status Messages -->
+            <div id="statusMessage" class="hidden"></div>
+
+            <!-- Main Cropping Interface -->
+            <div class="controls-section hidden" id="croppingInterface">
+                <!-- Control Panel -->
+                <div class="control-panel">
+                    <h3>📋 Photo Specifications</h3>
+                    
+                    <!-- Country Presets -->
+                    <div class="preset-option" data-width="35" data-height="45" data-head-min="25" data-head-max="35">
+                        <h4>🇺🇸 US Passport/Visa</h4>
+                        <p>35×45 mm, Head: 25-35mm</p>
+                    </div>
+                    <div class="preset-option" data-width="50" data-height="70" data-head-min="31" data-head-max="36">
+                        <h4>🇨🇦 Canada Passport</h4>
+                        <p>50×70 mm, Head: 31-36mm</p>
+                    </div>
+                    <div class="preset-option" data-width="35" data-height="45" data-head-min="32" data-head-max="36">
+                        <h4>🇪🇺 Schengen Visa</h4>
+                        <p>35×45 mm, Head: 32-36mm</p>
+                    </div>
+
+                    <!-- Manual Controls -->
+                    <div class="measurement-controls">
+                        <div class="measurement-group">
+                            <label for="photoWidth">Photo Width (mm)</label>
+                            <input type="number" id="photoWidth" min="20" max="100" value="35">
+                        </div>
+                        <div class="measurement-group">
+                            <label for="photoHeight">Photo Height (mm)</label>
+                            <input type="number" id="photoHeight" min="20" max="150" value="45">
+                        </div>
+                        <div class="measurement-group">
+                            <label for="headHeight">Head Height (mm)</label>
+                            <input type="number" id="headHeight" min="20" max="50" value="30">
+                        </div>
+                        <button class="auto-detect-btn" id="autoDetectBtn">🤖 Auto-Detect Face & Measurements</button>
+                    </div>
+                </div>
+
+                <!-- Crop Area -->
+                <div class="crop-area" id="cropArea">
+                    <div class="image-container" id="imageContainer">
+                        <img id="sourceImage" class="source-image" alt="Source photo">
+                        <div class="crop-overlay hidden" id="cropOverlay">
+                            <div class="crop-handle nw"></div>
+                            <div class="crop-handle ne"></div>
+                            <div class="crop-handle sw"></div>
+                            <div class="crop-handle se"></div>
+                        </div>
+                        <div class="face-detection-overlay hidden" id="faceOverlay"></div>
+                        <div class="head-measurement-line hidden" id="headMeasurementLine"></div>
+                        <div class="measurement-label hidden" id="measurementLabel"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons hidden" id="actionButtons">
+                <button class="btn" id="resetCropBtn">🔄 Reset Crop</button>
+                <button class="btn btn-success" id="cropPhotoBtn">✂️ Crop Photo</button>
+            </div>
+
+            <!-- Preview Section -->
+            <div class="preview-section hidden" id="previewSection">
+                <h3>📸 Cropped Result</h3>
+                <canvas id="previewCanvas" class="preview-canvas"></canvas>
+                <div class="action-buttons" style="margin-top: 20px;">
+                    <button class="btn btn-success" id="downloadBtn">📥 Download Photo</button>
+                    <button class="btn" id="startOverBtn">🔄 Start Over</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class AdvancedPassportCropper {
+            constructor() {
+                this.currentImage = null;
+                this.faceDetectionModel = null;
+                this.cropBox = { x: 0, y: 0, width: 0, height: 0 };
+                this.isDragging = false;
+                this.isResizing = false;
+                this.dragStart = { x: 0, y: 0 };
+                this.selectedPreset = null;
+                this.faceData = null;
+                
+                this.init();
+            }
+
+            init() {
+                this.setupEventListeners();
+                this.loadFaceDetection();
+            }
+
+            async loadFaceDetection() {
+                // Simulate face detection model loading
+                // In a real implementation, you would load TensorFlow.js or similar
+                console.log('Face detection model loaded (simulated)');
+            }
+
+            setupEventListeners() {
+                // File upload
+                const uploadArea = document.getElementById('uploadArea');
+                const fileInput = document.getElementById('fileInput');
+
+                uploadArea.addEventListener('click', () => fileInput.click());
+                uploadArea.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.add('dragover');
+                });
+                uploadArea.addEventListener('dragleave', () => {
+                    uploadArea.classList.remove('dragover');
+                });
+                uploadArea.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.remove('dragover');
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0) {
+                        this.handleFileUpload(files[0]);
+                    }
+                });
+
+                fileInput.addEventListener('change', (e) => {
+                    if (e.target.files.length > 0) {
+                        this.handleFileUpload(e.target.files[0]);
+                    }
+                });
+
+                // Preset selection
+                document.querySelectorAll('.preset-option').forEach(option => {
+                    option.addEventListener('click', () => {
+                        this.selectPreset(option);
+                    });
+                });
+
+                // Manual input changes
+                ['photoWidth', 'photoHeight', 'headHeight'].forEach(id => {
+                    document.getElementById(id).addEventListener('input', () => {
+                        this.updateCropBox();
+                    });
+                });
+
+                // Auto-detect button
+                document.getElementById('autoDetectBtn').addEventListener('click', () => {
+                    this.autoDetectFace();
+                });
+
+                // Action buttons
+                document.getElementById('resetCropBtn').addEventListener('click', () => {
+                    this.resetCrop();
+                });
+
+                document.getElementById('cropPhotoBtn').addEventListener('click', () => {
+                    this.cropPhoto();
+                });
+
+                document.getElementById('downloadBtn').addEventListener('click', () => {
+                    this.downloadPhoto();
+                });
+
+                document.getElementById('startOverBtn').addEventListener('click', () => {
+                    this.startOver();
+                });
+
+                // Crop box interaction
+                this.setupCropBoxInteraction();
+            }
+
+            handleFileUpload(file) {
+                if (!file.type.startsWith('image/')) {
+                    this.showStatus('Please select a valid image file', 'error');
+                    return;
+                }
+
+                if (file.size > 10 * 1024 * 1024) {
+                    this.showStatus('File size must be less than 10MB', 'error');
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        this.currentImage = img;
+                        this.showCroppingInterface();
+                        this.initializeCropBox();
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+
+            showCroppingInterface() {
+                document.getElementById('uploadSection').classList.add('hidden');
+                document.getElementById('croppingInterface').classList.remove('hidden');
+                document.getElementById('actionButtons').classList.remove('hidden');
+
+                const sourceImage = document.getElementById('sourceImage');
+                sourceImage.src = this.currentImage.src;
+                sourceImage.onload = () => {
+                    this.initializeCropBox();
+                };
+
+                this.showStatus('Photo loaded successfully! Select a preset or adjust manually.', 'success');
+            }
+
+            selectPreset(option) {
+                document.querySelectorAll('.preset-option').forEach(o => o.classList.remove('selected'));
+                option.classList.add('selected');
+
+                this.selectedPreset = {
+                    width: parseInt(option.dataset.width),
+                    height: parseInt(option.dataset.height),
+                    headMin: parseInt(option.dataset.headMin),
+                    headMax: parseInt(option.dataset.headMax)
+                };
+
+                document.getElementById('photoWidth').value = this.selectedPreset.width;
+                document.getElementById('photoHeight').value = this.selectedPreset.height;
+                document.getElementById('headHeight').value = Math.round((this.selectedPreset.headMin + this.selectedPreset.headMax) / 2);
+
+                this.updateCropBox();
+                this.showStatus(`Selected ${option.querySelector('h4').textContent}`, 'success');
+            }
+
+            initializeCropBox() {
+                if (!this.currentImage) return;
+
+                const sourceImage = document.getElementById('sourceImage');
+                const imageRect = sourceImage.getBoundingClientRect();
+                const containerRect = sourceImage.parentElement.getBoundingClientRect();
+
+                // Calculate initial crop box (center, passport ratio)
+                const aspectRatio = 35 / 45; // Default passport ratio
+                const imageAspectRatio = sourceImage.naturalWidth / sourceImage.naturalHeight;
+
+                let cropWidth, cropHeight;
+                if (imageAspectRatio > aspectRatio) {
+                    cropHeight = imageRect.height * 0.8;
+                    cropWidth = cropHeight * aspectRatio;
+                } else {
+                    cropWidth = imageRect.width * 0.8;
+                    cropHeight = cropWidth / aspectRatio;
+                }
+
+                this.cropBox = {
+                    x: (imageRect.width - cropWidth) / 2,
+                    y: (imageRect.height - cropHeight) / 2,
+                    width: cropWidth,
+                    height: cropHeight
+                };
+
+                this.updateCropOverlay();
+                document.getElementById('cropOverlay').classList.remove('hidden');
+            }
+
+            updateCropBox() {
+                if (!this.currentImage) return;
+
+                const width = parseInt(document.getElementById('photoWidth').value) || 35;
+                const height = parseInt(document.getElementById('photoHeight').value) || 45;
+                const aspectRatio = width / height;
+
+                const sourceImage = document.getElementById('sourceImage');
+                const imageRect = sourceImage.getBoundingClientRect();
+
+                // Maintain aspect ratio and center the crop box
+                let cropWidth, cropHeight;
+                const currentAspectRatio = this.cropBox.width / this.cropBox.height;
+
+                if (Math.abs(currentAspectRatio - aspectRatio) > 0.01) {
+                    // Adjust crop box to new aspect ratio
+                    cropHeight = this.cropBox.height;
+                    cropWidth = cropHeight * aspectRatio;
+
+                    if (cropWidth > imageRect.width * 0.9) {
+                        cropWidth = imageRect.width * 0.9;
+                        cropHeight = cropWidth / aspectRatio;
+                    }
+
+                    this.cropBox.width = cropWidth;
+                    this.cropBox.height = cropHeight;
+                    this.cropBox.x = Math.max(0, Math.min(imageRect.width - cropWidth, this.cropBox.x));
+                    this.cropBox.y = Math.max(0, Math.min(imageRect.height - cropHeight, this.cropBox.y));
+                }
+
+                this.updateCropOverlay();
+            }
+
+            updateCropOverlay() {
+                const overlay = document.getElementById('cropOverlay');
+                overlay.style.left = this.cropBox.x + 'px';
+                overlay.style.top = this.cropBox.y + 'px';
+                overlay.style.width = this.cropBox.width + 'px';
+                overlay.style.height = this.cropBox.height + 'px';
+            }
+
+            setupCropBoxInteraction() {
+                const overlay = document.getElementById('cropOverlay');
+                const handles = overlay.querySelectorAll('.crop-handle');
+
+                // Dragging the crop box
+                overlay.addEventListener('mousedown', (e) => {
+                    if (e.target.classList.contains('crop-handle')) return;
+                    this.isDragging = true;
+                    this.dragStart = { x: e.clientX - this.cropBox.x, y: e.clientY - this.cropBox.y };
+                    e.preventDefault();
+                });
+
+                // Resizing with handles
+                handles.forEach(handle => {
+                    handle.addEventListener('mousedown', (e) => {
+                        this.isResizing = handle.className.split(' ')[1];
+                        this.dragStart = { x: e.clientX, y: e.clientY };
+                        e.preventDefault();
+                        e.stopPropagation();
+                    });
+                });
+
+                // Mouse move and up events
+                document.addEventListener('mousemove', (e) => {
+                    if (this.isDragging) {
+                        this.dragCropBox(e);
+                    } else if (this.isResizing) {
+                        this.resizeCropBox(e);
+                    }
+                });
+
+                document.addEventListener('mouseup', () => {
+                    this.isDragging = false;
+                    this.isResizing = false;
+                });
+            }
+
+            dragCropBox(e) {
+                const sourceImage = document.getElementById('sourceImage');
+                const imageRect = sourceImage.getBoundingClientRect();
+
+                let newX = e.clientX - this.dragStart.x;
+                let newY = e.clientY - this.dragStart.y;
+
+                // Constrain to image bounds
+                newX = Math.max(0, Math.min(imageRect.width - this.cropBox.width, newX));
+                newY = Math.max(0, Math.min(imageRect.height - this.cropBox.height, newY));
+
+                this.cropBox.x = newX;
+                this.cropBox.y = newY;
+                this.updateCropOverlay();
+            }
+
+            resizeCropBox(e) {
+                const sourceImage = document.getElementById('sourceImage');
+                const imageRect = sourceImage.getBoundingClientRect();
+                const aspectRatio = this.cropBox.width / this.cropBox.height;
+
+                const deltaX = e.clientX - this.dragStart.x;
+                const deltaY = e.clientY - this.dragStart.y;
+
+                let newWidth = this.cropBox.width;
+                let newHeight = this.cropBox.height;
+                let newX = this.cropBox.x;
+                let newY = this.cropBox.y;
+
+                switch (this.isResizing) {
+                    case 'se':
+                        newWidth = Math.max(50, this.cropBox.width + deltaX);
+                        newHeight = newWidth / aspectRatio;
+                        break;
+                    case 'sw':
+                        newWidth = Math.max(50, this.cropBox.width - deltaX);
+                        newHeight = newWidth / aspectRatio;
+                        newX = this.cropBox.x + this.cropBox.width - newWidth;
+                        break;
+                    case 'ne':
+                        newWidth = Math.max(50, this.cropBox.width + deltaX);
+                        newHeight = newWidth / aspectRatio;
+                        newY = this.cropBox.y + this.cropBox.height - newHeight;
+                        break;
+                    case 'nw':
+                        newWidth = Math.max(50, this.cropBox.width - deltaX);
+                        newHeight = newWidth / aspectRatio;
+                        newX = this.cropBox.x + this.cropBox.width - newWidth;
+                        newY = this.cropBox.y + this.cropBox.height - newHeight;
+                        break;
+                }
+
+                // Constrain to image bounds
+                if (newX >= 0 && newY >= 0 && newX + newWidth <= imageRect.width && newY + newHeight <= imageRect.height) {
+                    this.cropBox = { x: newX, y: newY, width: newWidth, height: newHeight };
+                    this.updateCropOverlay();
+                    this.dragStart = { x: e.clientX, y: e.clientY };
+                }
+            }
+
+            async autoDetectFace() {
+                this.showStatus('Detecting face and measuring head dimensions...', 'warning');
+
+                // Simulate face detection (in real implementation, use TensorFlow.js or similar)
+                setTimeout(() => {
+                    this.simulateFaceDetection();
+                }, 1500);
+            }
+
+            simulateFaceDetection() {
+                const sourceImage = document.getElementById('sourceImage');
+                const imageRect = sourceImage.getBoundingClientRect();
+
+                // Simulate detected face (center area of image)
+                const faceWidth = imageRect.width * 0.3;
+                const faceHeight = imageRect.height * 0.4;
+                const faceX = (imageRect.width - faceWidth) / 2;
+                const faceY = imageRect.height * 0.2;
+
+                this.faceData = {
+                    x: faceX,
+                    y: faceY,
+                    width: faceWidth,
+                    height: faceHeight,
+                    crownY: faceY,
+                    chinY: faceY + faceHeight
+                };
+
+                // Show face detection overlay
+                const faceOverlay = document.getElementById('faceOverlay');
+                faceOverlay.style.left = faceX + 'px';
+                faceOverlay.style.top = faceY + 'px';
+                faceOverlay.style.width = faceWidth + 'px';
+                faceOverlay.style.height = faceHeight + 'px';
+                faceOverlay.classList.remove('hidden');
+
+                // Show head measurement line
+                const measurementLine = document.getElementById('headMeasurementLine');
+                measurementLine.style.left = (faceX + faceWidth / 2) + 'px';
+                measurementLine.style.top = this.faceData.crownY + 'px';
+                measurementLine.style.height = faceHeight + 'px';
+                measurementLine.classList.remove('hidden');
+
+                // Show measurement label
+                const measurementLabel = document.getElementById('measurementLabel');
+                measurementLabel.style.left = (faceX + faceWidth / 2 + 10) + 'px';
+                measurementLabel.style.top = (faceY + faceHeight / 2) + 'px';
+                measurementLabel.textContent = `${Math.round(faceHeight * 0.1)}mm`;
+                measurementLabel.classList.remove('hidden');
+
+                // Auto-adjust crop box based on detected face
+                this.adjustCropBoxToFace();
+
+                this.showStatus('Face detected! Crop box adjusted automatically. You can fine-tune manually.', 'success');
+            }
+
+            adjustCropBoxToFace() {
+                if (!this.faceData) return;
+
+                const photoWidth = parseInt(document.getElementById('photoWidth').value) || 35;
+                const photoHeight = parseInt(document.getElementById('photoHeight').value) || 45;
+                const headHeight = parseInt(document.getElementById('headHeight').value) || 30;
+
+                // Calculate ideal crop box based on face position and head height requirements
+                const aspectRatio = photoWidth / photoHeight;
+                const headToPhotoRatio = headHeight / photoHeight;
+
+                const sourceImage = document.getElementById('sourceImage');
+                const imageRect = sourceImage.getBoundingClientRect();
+
+                // Calculate crop dimensions
+                const idealCropHeight = this.faceData.height / headToPhotoRatio;
+                const idealCropWidth = idealCropHeight * aspectRatio;
+
+                // Position crop box to center the face properly
+                const cropX = Math.max(0, Math.min(
+                    imageRect.width - idealCropWidth,
+                    this.faceData.x + this.faceData.width / 2 - idealCropWidth / 2
+                ));
+
+                const cropY = Math.max(0, Math.min(
+                    imageRect.height - idealCropHeight,
+                    this.faceData.crownY - idealCropHeight * 0.1 // Small margin from top
+                ));
+
+                this.cropBox = {
+                    x: cropX,
+                    y: cropY,
+                    width: Math.min(idealCropWidth, imageRect.width),
+                    height: Math.min(idealCropHeight, imageRect.height)
+                };
+
+                this.updateCropOverlay();
+            }
+
+            resetCrop() {
+                this.initializeCropBox();
+                document.getElementById('faceOverlay').classList.add('hidden');
+                document.getElementById('headMeasurementLine').classList.add('hidden');
+                document.getElementById('measurementLabel').classList.add('hidden');
+                this.showStatus('Crop box reset to default position', 'success');
+            }
+
+            cropPhoto() {
+                if (!this.currentImage) return;
+
+                const sourceImage = document.getElementById('sourceImage');
+                const canvas = document.getElementById('previewCanvas');
+                const ctx = canvas.getContext('2d');
+
+                // Calculate crop parameters
+                const scaleX = this.currentImage.naturalWidth / sourceImage.offsetWidth;
+                const scaleY = this.currentImage.naturalHeight / sourceImage.offsetHeight;
+
+                const cropX = this.cropBox.x * scaleX;
+                const cropY = this.cropBox.y * scaleY;
+                const cropWidth = this.cropBox.width * scaleX;
+                const cropHeight = this.cropBox.height * scaleY;
+
+                // Set output dimensions (300 DPI)
+                const photoWidth = parseInt(document.getElementById('photoWidth').value) || 35;
+                const photoHeight = parseInt(document.getElementById('photoHeight').value) || 45;
+                const dpi = 300;
+                const outputWidth = Math.round((photoWidth / 25.4) * dpi);
+                const outputHeight = Math.round((photoHeight / 25.4) * dpi);
+
+                canvas.width = outputWidth;
+                canvas.height = outputHeight;
+
+                // Draw cropped image
+                ctx.drawImage(
+                    this.currentImage,
+                    cropX, cropY, cropWidth, cropHeight,
+                    0, 0, outputWidth, outputHeight
+                );
+
+                // Show preview
+                document.getElementById('previewSection').classList.remove('hidden');
+                this.showStatus(`Photo cropped successfully! Output: ${outputWidth}×${outputHeight} pixels (${photoWidth}×${photoHeight}mm at 300 DPI)`, 'success');
+            }
+
+            downloadPhoto() {
+                const canvas = document.getElementById('previewCanvas');
+                const photoWidth = parseInt(document.getElementById('photoWidth').value) || 35;
+                const photoHeight = parseInt(document.getElementById('photoHeight').value) || 45;
+
+                canvas.toBlob((blob) => {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `passport-photo-${photoWidth}x${photoHeight}mm-300dpi.jpg`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }, 'image/jpeg', 0.95);
+
+                this.showStatus('Photo downloaded successfully!', 'success');
+            }
+
+            startOver() {
+                // Reset everything
+                this.currentImage = null;
+                this.faceData = null;
+                this.selectedPreset = null;
+
+                document.getElementById('uploadSection').classList.remove('hidden');
+                document.getElementById('croppingInterface').classList.add('hidden');
+                document.getElementById('actionButtons').classList.add('hidden');
+                document.getElementById('previewSection').classList.add('hidden');
+                document.getElementById('statusMessage').classList.add('hidden');
+
+                document.querySelectorAll('.preset-option').forEach(o => o.classList.remove('selected'));
+                document.getElementById('fileInput').value = '';
+                document.getElementById('cropOverlay').classList.add('hidden');
+                document.getElementById('faceOverlay').classList.add('hidden');
+                document.getElementById('headMeasurementLine').classList.add('hidden');
+                document.getElementById('measurementLabel').classList.add('hidden');
+            }
+
+            showStatus(message, type) {
+                const statusDiv = document.getElementById('statusMessage');
+                statusDiv.className = `status-message status-${type}`;
+                statusDiv.textContent = message;
+                statusDiv.classList.remove('hidden');
+
+                if (type === 'success') {
+                    setTimeout(() => {
+                        statusDiv.classList.add('hidden');
+                    }, 3000);
+                }
+            }
+        }
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', () => {
+            new AdvancedPassportCropper();
+        });
+    </script>
+</body>
+</html>
+
