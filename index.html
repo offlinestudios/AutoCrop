@@ -387,17 +387,21 @@
                     <h3>📋 Photo Specifications</h3>
                     
                     <!-- Country Presets -->
-                    <div class="preset-option" data-width="35" data-height="45" data-head-min="25" data-head-max="35">
+                    <div class="preset-option" data-width="51" data-height="51" data-head-min="25" data-head-max="35" data-country="us">
                         <h4>🇺🇸 US Passport/Visa</h4>
-                        <p>35×45 mm, Head: 25-35mm</p>
+                        <p>2×2 inches, Head: 25-35mm</p>
                     </div>
-                    <div class="preset-option" data-width="50" data-height="70" data-head-min="31" data-head-max="36">
+                    <div class="preset-option" data-width="50" data-height="70" data-head-min="31" data-head-max="36" data-country="canada">
                         <h4>🇨🇦 Canada Passport</h4>
                         <p>50×70 mm, Head: 31-36mm</p>
                     </div>
-                    <div class="preset-option" data-width="35" data-height="45" data-head-min="32" data-head-max="36">
-                        <h4>🇪🇺 Schengen Visa</h4>
+                    <div class="preset-option" data-width="35" data-height="45" data-head-min="32" data-head-max="36" data-country="eu">
+                        <h4>🇪🇺 EU Passport</h4>
                         <p>35×45 mm, Head: 32-36mm</p>
+                    </div>
+                    <div class="preset-option" data-width="33" data-height="48" data-head-min="28" data-head-max="33" data-country="china">
+                        <h4>🇨🇳 China Passport</h4>
+                        <p>33×48 mm, Head: 28-33mm</p>
                     </div>
 
                     <!-- Manual Controls -->
@@ -593,7 +597,8 @@
                     width: parseInt(option.dataset.width),
                     height: parseInt(option.dataset.height),
                     headMin: parseInt(option.dataset.headMin),
-                    headMax: parseInt(option.dataset.headMax)
+                    headMax: parseInt(option.dataset.headMax),
+                    country: option.dataset.country
                 };
 
                 document.getElementById('photoWidth').value = this.selectedPreset.width;
@@ -601,7 +606,12 @@
                 document.getElementById('headHeight').value = Math.round((this.selectedPreset.headMin + this.selectedPreset.headMax) / 2);
 
                 this.updateCropBox();
-                this.showStatus(`Selected ${option.querySelector('h4').textContent}`, 'success');
+                this.showStatus(`Selected ${option.querySelector('h4').textContent} - Click Auto-Detect to crop automatically`, 'success');
+                
+                // Auto-crop if face detection has been run
+                if (this.faceData) {
+                    this.autoCropToFinalSize();
+                }
             }
 
             initializeCropBox() {
@@ -826,7 +836,14 @@
                 // Auto-adjust crop box based on detected face
                 this.adjustCropBoxToFace();
 
-                this.showStatus('Face detected! Crop box adjusted automatically. You can fine-tune manually.', 'success');
+                // Automatically crop to final size if preset is selected
+                if (this.selectedPreset) {
+                    setTimeout(() => {
+                        this.autoCropToFinalSize();
+                    }, 500);
+                }
+
+                this.showStatus('Face detected! Auto-cropping to final dimensions...', 'success');
             }
 
             adjustCropBoxToFace() {
@@ -876,6 +893,69 @@
                 this.showStatus('Crop box reset to default position', 'success');
             }
 
+            autoCropToFinalSize() {
+                if (!this.currentImage || !this.selectedPreset) return;
+
+                // Get final output dimensions based on country
+                const finalDimensions = this.getFinalOutputDimensions();
+                
+                const sourceImage = document.getElementById('sourceImage');
+                const canvas = document.getElementById('previewCanvas');
+                const ctx = canvas.getContext('2d');
+
+                // Calculate crop parameters
+                const scaleX = this.currentImage.naturalWidth / sourceImage.offsetWidth;
+                const scaleY = this.currentImage.naturalHeight / sourceImage.offsetHeight;
+
+                const cropX = this.cropBox.x * scaleX;
+                const cropY = this.cropBox.y * scaleY;
+                const cropWidth = this.cropBox.width * scaleX;
+                const cropHeight = this.cropBox.height * scaleY;
+
+                // Set canvas to exact final dimensions
+                canvas.width = finalDimensions.width;
+                canvas.height = finalDimensions.height;
+
+                // Draw cropped image at exact final size
+                ctx.drawImage(
+                    this.currentImage,
+                    cropX, cropY, cropWidth, cropHeight,
+                    0, 0, finalDimensions.width, finalDimensions.height
+                );
+
+                // Show preview
+                document.getElementById('previewSection').classList.remove('hidden');
+                this.showStatus(`Auto-cropped to ${finalDimensions.width}×${finalDimensions.height}px (${this.selectedPreset.width}×${this.selectedPreset.height}mm)`, 'success');
+            }
+
+            getFinalOutputDimensions() {
+                // Use country-specific dimensions if preset is selected
+                if (this.selectedPreset && this.selectedPreset.country) {
+                    const countryDimensions = {
+                        // US Passport/Visa (2×2 inches at 300 DPI)
+                        'us': { width: 600, height: 600 },
+                        // Canada Passport (50×70mm at 300 DPI)
+                        'canada': { width: 591, height: 827 },
+                        // EU Passport (35×45mm at 300 DPI)
+                        'eu': { width: 413, height: 531 },
+                        // China Passport (33×48mm at 300 DPI)
+                        'china': { width: 390, height: 567 }
+                    };
+                    
+                    return countryDimensions[this.selectedPreset.country];
+                }
+
+                // Fallback to manual calculation for custom dimensions
+                const photoWidth = parseInt(document.getElementById('photoWidth').value) || 35;
+                const photoHeight = parseInt(document.getElementById('photoHeight').value) || 45;
+                const dpi = 300;
+                
+                return {
+                    width: Math.round((photoWidth / 25.4) * dpi),
+                    height: Math.round((photoHeight / 25.4) * dpi)
+                };
+            }
+
             cropPhoto() {
                 if (!this.currentImage) return;
 
@@ -916,14 +996,30 @@
 
             downloadPhoto() {
                 const canvas = document.getElementById('previewCanvas');
-                const photoWidth = parseInt(document.getElementById('photoWidth').value) || 35;
-                const photoHeight = parseInt(document.getElementById('photoHeight').value) || 45;
+                const finalDimensions = this.getFinalOutputDimensions();
+                
+                let filename = 'passport-photo';
+                if (this.selectedPreset && this.selectedPreset.country) {
+                    const countryNames = {
+                        'us': 'US-2x2inch',
+                        'canada': 'Canada-50x70mm',
+                        'eu': 'EU-35x45mm',
+                        'china': 'China-33x48mm'
+                    };
+                    filename = `passport-photo-${countryNames[this.selectedPreset.country]}`;
+                } else {
+                    const photoWidth = parseInt(document.getElementById('photoWidth').value) || 35;
+                    const photoHeight = parseInt(document.getElementById('photoHeight').value) || 45;
+                    filename = `passport-photo-${photoWidth}x${photoHeight}mm`;
+                }
+                
+                filename += `-${finalDimensions.width}x${finalDimensions.height}px.jpg`;
 
                 canvas.toBlob((blob) => {
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = `passport-photo-${photoWidth}x${photoHeight}mm-300dpi.jpg`;
+                    a.download = filename;
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
